@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Página Inicial{% endblock %}
+
+{% block content %}
+<style>
+    .nova-nota {
+        width: 30px;
+        height: 30px;
+        background-color: rgb(63, 63, 226);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 100px;
+        position: fixed;
+        right: 40px;
+        bottom: 80px;
+    }
+</style>
+
+<!-- Tabs content -->
+<div class="tab-content" id="ex2-content">
+    <!-- Tab 1: Notas -->
+    <div class="tab-pane fade show active" id="ex3-tabs-1" role="tabpanel" aria-labelledby="ex3-tab-1">
+        <div id="notesList">
+            {% for nota in notas %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ nota.titulo }}</h5>
+                        <p class="card-text">{{ nota.conteudo }}</p>
+                    </div>
+                    <div class="card-footer text-muted">
+                        {{ nota.data_criacao }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="card-footer text-muted">
+            <a href="/nova-nota" class="nova-nota"><i class="fa-solid fa-pen"></i></a>
+        </div>
+    </div>
+
+    <!-- Tab 2: Pesquisa de notas -->
+    <div class="tab-pane fade" id="ex3-tabs-2" role="tabpanel" aria-labelledby="ex3-tab-2">
+        <div class="input-group">
+            <div class="form-outline" data-mdb-input-init>
+                <input type="search" id="searchInput" class="form-control" placeholder="Buscar por título ou conteúdo" />
+                <label class="form-label" for="searchInput">Search</label>
+            </div>
+            <button type="button" class="btn btn-primary" data-mdb-ripple-init id="searchButton">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+        <hr>
+        <div id="searchResults">
+            <!-- Os resultados da pesquisa serão inseridos aqui -->
+        </div>
+    </div>
+
+    <!-- Tab 3: Perfil do Usuário -->
+    <div class="tab-pane fade" id="ex3-tabs-3" role="tabpanel" aria-labelledby="ex3-tab-3">
+        <div id="userProfile">
+            <h5>Bem-vindo, {{ user['displayName'] or user['email'] }}</h5>
+            <p>Email: {{ user['email'] }}</p>
+        </div>
+        <div class="card-footer text-muted">
+            <button id="logoutButton" class="btn btn-danger">Sair</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    // Importando as funções do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyD--bRxybPKnMVXK32a-TxJUZv9XYM_joQ",
+        authDomain: "x-jao-faa0a.firebaseapp.com",
+        projectId: "x-jao-faa0a",
+        storageBucket: "x-jao-faa0a.firebasestorage.app",
+        messagingSenderId: "157238814297",
+        appId: "1:157238814297:web:fce1d3b623714a414eb348",
+        measurementId: "G-JK1PFRDWK0"
+    };
+
+    // Inicializando o Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Função para carregar as notas
+    async function loadNotes() {
+        const notesList = document.getElementById('notesList');
+        notesList.innerHTML = ''; // Limpa a lista antes de adicionar as novas notas
+
+        try {
+            const querySnapshot = await getDocs(collection(db, "notes"));
+            querySnapshot.forEach((doc) => {
+                const note = doc.data();
+                const card = document.createElement('div');
+                card.classList.add('card', 'mb-3');
+                card.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">${note.title}</h5>
+                        <p class="card-text">${note.content}</p>
+                    </div>
+                    <div class="card-footer text-muted">
+                        ${new Date(note.createdAt.seconds * 1000).toLocaleString()}
+                    </div>
+                `;
+                notesList.appendChild(card);
+            });
+        } catch (e) {
+            console.error("Erro ao carregar notas: ", e);
+        }
+    }
+
+    // Função para pesquisar as notas
+    async function searchNotes(queryText) {
+        const searchResults = document.getElementById('searchResults');
+        searchResults.innerHTML = ''; // Limpa os resultados antes de exibir
+
+        try {
+            const notesQuery = query(
+                collection(db, "notes"),
+                where("title", ">=", queryText),
+                where("title", "<=", queryText + "\uf8ff") // Pesquisa por prefixo
+            );
+            const querySnapshot = await getDocs(notesQuery);
+            if (querySnapshot.empty) {
+                searchResults.innerHTML = '<p>Nenhuma nota encontrada.</p>';
+            } else {
+                querySnapshot.forEach((doc) => {
+                    const note = doc.data();
+                    const card = document.createElement('div');
+                    card.classList.add('card', 'mb-3');
+                    card.innerHTML = `
+                        <div class="card-body">
+                            <h5 class="card-title">${note.title}</h5>
+                            <p class="card-text">${note.content}</p>
+                        </div>
+                        <div class="card-footer text-muted">
+                            ${new Date(note.createdAt.seconds * 1000).toLocaleString()}
+                        </div>
+                    `;
+                    searchResults.appendChild(card);
+                });
+            }
+        } catch (e) {
+            console.error("Erro ao pesquisar notas: ", e);
+        }
+    }
+
+    // Evento para capturar o clique no botão de pesquisa
+    document.getElementById('searchButton').addEventListener('click', () => {
+        const searchText = document.getElementById('searchInput').value.trim();
+        if (searchText) {
+            searchNotes(searchText);
+        } else {
+            loadNotes(); // Carregar todas as notas se a busca estiver vazia
+        }
+    });
+
+    // Evento para capturar o clique no botão de logout
+    document.getElementById('logoutButton').addEventListener('click', () => {
+        signOut(auth).then(() => {
+            window.location.href = "/login"; // Redireciona para a página de login após logout
+        }).catch((error) => {
+            console.error("Erro ao sair: ", error);
+        });
+    });
+
+    // Chamar a função para carregar as notas e exibir o perfil do usuário quando a página carregar
+    loadNotes();
+</script>
+
+{% endblock %}

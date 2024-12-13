@@ -1,0 +1,9 @@
+# Ignorar arquivos sensíveis
+serviceAccountKey.json
+
+# Ignorar pastas do ambiente virtual
+venv/
+
+# Ignorar arquivos do sistema
+*.log
+*.DS_Store

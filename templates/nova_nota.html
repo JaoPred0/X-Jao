@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Nova Nota{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos gerais do formulário */
+    .note-form {
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    /* Título do formulário */
+    .form-title {
+        text-align: center;
+        font-size: 24px;
+        color: #ffffff;
+        margin-bottom: 20px;
+    }
+
+    /* Estilos dos rótulos (labels) */
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        color: #ffffff;
+    }
+
+    /* Estilo do campo de entrada (input) */
+    .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+        margin-bottom: 20px;
+        transition: border-color 0.3s ease;
+    }
+
+    /* Estilo para o campo de texto (textarea) */
+    .form-textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 16px;
+        height: 150px;
+        margin-bottom: 20px;
+        transition: border-color 0.3s ease;
+    }
+
+    /* Foco nos campos de entrada e textarea */
+    .form-input:focus,
+    .form-textarea:focus {
+        border-color: #4CAF50;
+        outline: none;
+    }
+
+    /* Estilo do botão de envio */
+    .form-button {
+        width: 100%;
+        padding: 12px;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .form-button:hover {
+        background-color: #45a049;
+    }
+
+    .form-button:active {
+        background-color: #3e8e41;
+    }
+</style>
+<div class="d-flex justify-content-around">
+    <a href="/" class="text-light"><i class="fa-solid fa-arrow-left"></i></a>
+    <h2 class="form-title">Criar Nova Nota</h2>
+    <div></div>
+</div>
+
+<!-- Formulário de Criação de Nota -->
+<form id="noteForm" class="note-form">
+    <label for="noteTitle" class="form-label">Título:</label>
+    <input type="text" id="noteTitle" class="form-input" required placeholder="Digite o título da nota">
+
+    <label for="noteContent" class="form-label">Conteúdo:</label>
+    <textarea id="noteContent" class="form-textarea" required placeholder="Digite o conteúdo da nota"></textarea>
+
+    <button type="submit" class="form-button">Criar Nota</button>
+</form>
+
+<!-- Coloque o script no final do body -->
+<script type="module">
+    // Importando os SDKs necessários do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyD--bRxybPKnMVXK32a-TxJUZv9XYM_joQ",
+        authDomain: "x-jao-faa0a.firebaseapp.com",
+        projectId: "x-jao-faa0a",
+        storageBucket: "x-jao-faa0a.firebasestorage.app",
+        messagingSenderId: "157238814297",
+        appId: "1:157238814297:web:fce1d3b623714a414eb348",
+        measurementId: "G-JK1PFRDWK0"
+    };
+
+    // Inicializando o Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Função para adicionar uma nova nota no Firestore
+    async function addNote() {
+        const noteTitle = document.getElementById('noteTitle').value.trim();
+        const noteContent = document.getElementById('noteContent').value.trim();
+
+        // Validação básica para garantir que os campos não estejam vazios
+        if (!noteTitle || !noteContent) {
+            alert("Por favor, preencha tanto o título quanto o conteúdo da nota.");
+            return;
+        }
+
+        try {
+            // Adiciona uma nova nota no Firestore
+            const docRef = await addDoc(collection(db, "notes"), {
+                title: noteTitle,
+                content: noteContent,
+                createdAt: new Date()
+            });
+            console.log("Documento escrito com ID: ", docRef.id);
+            alert("Nota criada com sucesso!");
+            // Após criar a nota, limpa os campos do formulário
+            document.getElementById('noteForm').reset();
+        } catch (e) {
+            console.error("Erro ao adicionar documento: ", e);
+            alert("Erro ao criar nota. Tente novamente.");
+        }
+    }
+
+    // Evento para capturar o envio do formulário
+    document.getElementById('noteForm').addEventListener('submit', function (event) {
+        event.preventDefault(); // Impede o comportamento padrão de envio do formulário
+        addNote(); // Chama a função para adicionar a nota
+    });
+</script>
+
+{% endblock %}
